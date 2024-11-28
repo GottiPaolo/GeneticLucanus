@@ -1,6 +1,6 @@
 
 from Lucani import *
-
+from parametri import *
                 
 def new_gen():
     global lucani, piante, population_size
@@ -19,19 +19,11 @@ def new_gen():
         p.p = gg.Vector2(600, 350)
         p.dir = gg.Vector2(1, 0)
         
+def resetpiante():
+    global piante
     piante = [gg.Vector2(np.random.random()*1200, np.random.random()*700) for k in range(n_piante)]
     
-## Parametri
-population_size = 20
-to_save = population_size // 10
-to_rep = population_size // 3
-mutation_rate = 0.02
-gen_time = 100
-gen_count = 0
-n_piante = 200
-running = True
-show = True
-##
+
         
 
 gg.init()
@@ -39,9 +31,9 @@ if show:
     screen = gg.display.set_mode((1200, 700))
     gg.display.set_caption("Davide Simulation")
     clock = gg.time.Clock()
+    lucano_image = gg.image.load("img/lucano.png")
+    lucano_image = gg.transform.scale(lucano_image, (30, 50))  # Resize the image to 30x50 pixels
 
-lucano_image = gg.image.load("img/lucano.png")
-lucano_image = gg.transform.scale(lucano_image, (30, 50))  # Resize the image to 30x50 pixels
 lucani = [Lucano(600, 350) for i in range(population_size)]
 piante = [gg.Vector2(np.random.random()*1200, np.random.random()*700) for k in range(n_piante)]
 #lucano = Lucano(400, 300)
@@ -69,7 +61,7 @@ while running:
             screen.blit(rotated_image, image_rect.topleft)
         lucano.stamina -= 5
         lucano.fitness += lucano.stamina
-        d_min=1_000
+        d_min = 1_000
         v = None
         for x,y in piante:
             distanza = lucano.p.distance_to(gg.Vector2(x, y))
@@ -97,9 +89,8 @@ while running:
         if gen_count == 60:
             gen_time = 500
             
-        
-
         new_gen()
+        resetpiante()
 
     
     if show:
