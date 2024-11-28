@@ -4,7 +4,6 @@ from NeuralNets import *
 class Lucano:
     raggio_visivo = 100
     max_stamina = 1000
-    Live = True
     def __init__(self, x,y):
         self.p = gg.Vector2(x, y)
         self.dir = gg.Vector2(1, 0)
@@ -23,6 +22,10 @@ class Lucano:
 
     def ruota_orientamento(self, angolo):
         self.dir = self.dir.rotate(angolo)
+
+    def dead(self):
+        pass
+    #crepa
         
     def ragiona(self,angolo_pianta_vicina):
         input_ = [angolo_pianta_vicina, self.dir.x, self.dir.y , self.stamina/self.max_stamina]
