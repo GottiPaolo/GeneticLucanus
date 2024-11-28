@@ -127,14 +127,16 @@ mutation_rate = 0.01
 gen_time = 100
 gen_count = 0
 n_piante = 400
-
+running = True
+show = False
 ##
         
 
 gg.init()
-screen = gg.display.set_mode((1200, 700))
-gg.display.set_caption("Davide Simulation")
-clock = gg.time.Clock()
+if show:
+    screen = gg.display.set_mode((1200, 700))
+    gg.display.set_caption("Davide Simulation")
+    clock = gg.time.Clock()
 
 lucano_image = gg.image.load("img/lucano.png")
 lucano_image = gg.transform.scale(lucano_image, (30, 50))  # Resize the image to 30x50 pixels
@@ -142,8 +144,7 @@ lucani = [Lucano(600, 350) for i in range(population_size)]
 piante = [gg.Vector2(np.random.random()*1200, np.random.random()*700) for k in range(n_piante)]
 #lucano = Lucano(400, 300)
 
-running = True
-show = True
+
 frame_ = 0
 while running:
     frame_+=1  
@@ -201,6 +202,6 @@ while running:
     
     if show:
         gg.display.flip()
-    clock.tick(60)
+        clock.tick(60)
 
 
