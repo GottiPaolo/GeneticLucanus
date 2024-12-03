@@ -28,8 +28,8 @@ class NN:
             new.matrices[i][mutation_mask] = np.random.uniform(-1, 1, mutation_mask.sum())
             mutation_mask = np.random.rand(*self.biases[i].shape) < mutation_rate
             new.biases[i][mutation_mask] = np.random.uniform(-1, 1, mutation_mask.sum())
-        
         return new
+    
     def save_brain_to_file(brain, filename):
         with open(filename, 'w') as f:
             f.write(f"{brain.shape}\n")
@@ -53,4 +53,33 @@ class NN:
         brain.matrices = matrices
         brain.biases = biases
         return brain
+def save_brain_to_file(brain, filename):
+    with open(filename, 'w') as f:
+        f.write(f"{brain.shape}\n")
+        for matrix in brain.matrices:
+            for row in matrix:
+                for value in row:
+                    f.write(f"{value}\n")
+        for bias in brain.biases:
+            for value in bias:
+                f.write(f"{value}\n")
+
+def load_brain_from_file(filename):
+    with open(filename, 'r') as f:
+        shape = eval(f.readline().strip())
+        matrices = []
+        biases = []
+        for i in range(len(shape) - 1):
+            matrix = []
+            for _ in range(shape[i]):
+                row = [float(f.readline().strip()) for _ in range(shape[i + 1])]
+                matrix.append(row)
+            matrices.append(np.array(matrix))
+        for i in range(1, len(shape)):
+            bias = [float(f.readline().strip()) for _ in range(shape[i])]
+            biases.append(np.array(bias))
+    brain = NN(shape)
+    brain.matrices = matrices
+    brain.biases = biases
+    return brain
  

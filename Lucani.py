@@ -29,8 +29,8 @@ class Lucano:
         pass
         #crepa
         
-    def ragiona(self,angolo_pianta_vicina):
-        input_ = [angolo_pianta_vicina, self.dir.x, self.dir.y , self.stamina/self.max_stamina]
+    def ragiona(self,angolo_pianta_vicina, distanza_pianta_vicina):
+        input_ = [angolo_pianta_vicina, distanza_pianta_vicina]
         output = self.brain.esegui(input_)
         energia = (output[3]+1)*3
         angolo =  (output[2])*2
@@ -41,8 +41,8 @@ class Lucano:
         return output
     
     def reset(self):
-        self.p = (600, 350)
-        self.dir =  gg.Vector2(1, 0)
+        self.p = gg.Vector2(600, 350)
+        self.dir = gg.Vector2(1, 0)#.rotate(np.random.random()*360)
         self.stamina = self.max_stamina
         self.vede_pianta = False
         self.fitness = 0

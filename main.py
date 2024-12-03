@@ -2,24 +2,26 @@ from Lucani import *
 import matplotlib.pyplot as plt
 
 def save_best_brain():
-    best_lucano = max(lucani, key=lambda l: l.fitness)
+    best_lucano = min(lucani, key=lambda l: l.fitness)
     NN.save_brain_to_file(best_lucano.brain, f"Salvataggi/best_{gen_count}_{neural_net_shape}_{round(best_lucano.fitness,2)}.txt")
 
             
 
  
 ## Parametri
-population_size = 300
-to_save = population_size // 30
-to_rep = population_size // 2
+population_size = 100
+to_save = 3
+to_rep = 20
+to_death = population_size - to_rep
 mutation_rate = 0.01
-gen_time = 50
+gen_time = 300
 gen_count = 0
 n_piante = 1
 running = True
-show = True
+show = False
+graph = True
 finestra = (1200,700)
-neural_net_shape =  [4,3,3,4]
+neural_net_shape =  [2,3,3,4]
 
 fitness_minimo  = []
 fitness_medio   = []
@@ -28,17 +30,18 @@ fitness_massimo = []
             
             
 # Configura la figura
-plt.ion()  # Modalità interattiva
-fig, ax = plt.subplots()
-line_min, = ax.plot(range(gen_count), fitness_minimo, label='Fitness Minimo')
-line_max, = ax.plot(range(gen_count), fitness_massimo, label='Fitness Massimo')
-line_med, = ax.plot(range(gen_count), fitness_medio, label='Fitness Medio')
+if graph:
+    plt.ion()  # Modalità interattiva
+    fig, ax = plt.subplots()
+    line_min, = ax.plot(range(gen_count), fitness_minimo, label='Fitness Minimo')
+    line_max, = ax.plot(range(gen_count), fitness_massimo, label='Fitness Massimo')
+    line_med, = ax.plot(range(gen_count), fitness_medio, label='Fitness Medio')
 
-ax.set_title("Evoluzione del Fitness")
-ax.set_xlabel("Generazioni")
-ax.set_ylabel("Fitness")
-ax.legend()
-ax.grid()
+    ax.set_title("Evoluzione del Fitness")
+    ax.set_xlabel("Generazioni")
+    ax.set_ylabel("Fitness")
+    ax.legend()
+    ax.grid()
 
 # Funzione per aggiornare il grafico
 def update_plot():
@@ -58,22 +61,45 @@ def update_plot():
     plt.pause(0.1)
             
 def new_gen():
-    global lucani, piante, population_size
-    lucani = sorted(lucani, key = lambda l:l.fitness)
-    new_brains = []
-    for i in range(population_size-to_save):
-        padre = lucani[-np.random.randint(1,to_rep)]
-        madre = lucani[-np.random.randint(1,to_rep)]
-        new_brains.append(padre.brain.mix(madre.brain,mutation_rate))
+    global lucani, piante, gen_count, fitness_minimo, fitness_medio, fitness_massimo
+    lucani = sorted(lucani, key = lambda l: -l.fitness)
+    if gen_count > 150:
+        with open("temp.txt",'w') as file:
+            file.write(f'minimo: {fitness_minimo}\n')
+            file.write(f'medio: {fitness_medio}\n')
+            file.write(f'massimo: {fitness_massimo}\n')
+        save_best_brain()
+        quit()
+    temp = [l.fitness for l in lucani]
+    print('Generazione',gen_count)
+    print('Media scarti',np.mean(temp[:to_death]), len(temp[:to_death]))
+    print('Media genitori',np.mean(temp[-to_rep:]), len(temp[-to_rep:]))
+    print('Media elite',np.mean(temp[-to_save:]), len(temp[-to_save:]))   
+    print('\tNumero piante rimanenti',len(piante))
+    print('\tFitness minimo',temp[-1])
+    print('\tFitness medio',np.mean(temp))
+    print('\tFitness massimo',temp[0])
+    fitness_minimo.append(temp[-1])
+    fitness_medio.append(float(np.mean(temp)))
+    fitness_massimo.append(temp[0])
     
-    for i in range(population_size-to_save):
-        lucani[i].brain = new_brains[i]
-        
+
+    for i in range(to_death):
+        padre_index = -np.random.randint(1,to_rep)
+        madre_index = -np.random.randint(1,to_rep)
+        padre = lucani[padre_index]
+        madre = lucani[madre_index]
+
+        del lucani[i].brain
+        lucani[i].brain = padre.brain.mix(madre.brain,mutation_rate)
+
+    
+ 
     for p in lucani:
         p.reset()
-        p.p = gg.Vector2(600, 350)
-        p.dir = gg.Vector2(1, 0)
-        
+                
+def aggiorna_piante():
+    global piante
     piante = [gg.Vector2(np.random.random()*1200, np.random.random()*700) for k in range(n_piante)]
     
 
@@ -86,9 +112,14 @@ if show:
     lucano_image = gg.image.load("img/lucano.png")
     lucano_image = gg.transform.scale(lucano_image, (30, 50))  # Resize the image to 30x50 pixels
     
+    
+    lucano_image_best = gg.image.load("img/lucano2.png")
+    lucano_image_best = gg.transform.scale(lucano_image, (30, 50))  # Resize the image to 30x50 pixels
+    
 lucani = [Lucano(finestra[0]//2, finestra[1]//2,neural_net_shape) for i in range(population_size)]
 piante = [gg.Vector2(np.random.random()*1200, np.random.random()*700) for k in range(n_piante)]
 #lucano = Lucano(400, 300)
+
 
 
 frame_ = 0
@@ -107,59 +138,71 @@ while running:
         
     for i,lucano in enumerate(lucani):
         if show:
-            rotated_image = gg.transform.rotate(lucano_image, 270)
-            rotated_image = gg.transform.rotate(rotated_image, lucano.dir.angle_to(gg.Vector2(1,0)))
-            # Center the image on the Lucano's position
-            image_rect = rotated_image.get_rect(center=(lucano.p.x, lucano.p.y))
-            screen.blit(rotated_image, image_rect.topleft)
-        #  lucano.stamina -= 5
-        # lucano.fitness += lucano.stamina # funzione di fitness troppo complessa, da utilizzare più avanti
+            if i != 0:
+                rotated_image = gg.transform.rotate(lucano_image, 270)
+                rotated_image = gg.transform.rotate(rotated_image, lucano.dir.angle_to(gg.Vector2(1,0)))
+                # Center the image on the Lucano's position
+                image_rect = rotated_image.get_rect(center=(lucano.p.x, lucano.p.y))
+                screen.blit(rotated_image, image_rect.topleft)
+            else:
+                rotated_image_best = gg.transform.rotate(lucano_image_best, 270)
+                rotated_image_best = gg.transform.rotate(rotated_image_best, lucano.dir.angle_to(gg.Vector2(1,0)))
+                # Center the image on the Lucano's position
+                image_rect = rotated_image_best.get_rect(center=(lucano.p.x, lucano.p.y))
+                screen.blit(rotated_image_best, image_rect.topleft)
         
-        d_min=1_000
-        v = None
-        for x,y in piante:
+
+        d_min=np.inf
+        for index,(x,y) in enumerate(piante):
             distanza = lucano.p.distance_to(gg.Vector2(x, y))
             if distanza < d_min:
                 d_min = distanza
-                v = (x,y)
+                pianta_vicina = index
             if distanza < 5:
                 pass 
                 #piante.remove(gg.Vector2(x, y))
                 #piante.append(gg.Vector2(np.random.random()*1200, np.random.random()*700))
                 # lucano.stamina = min(lucano.stamina + 200, lucano.max_stamina)
-        if v:
-            angolo_pianta_vicina = lucano.p.angle_to(gg.Vector2(*v)) / 180
-        else:
-            angolo_pianta_vicina = 0
-        lucano.ragiona(angolo_pianta_vicina)
-        #lucano.fitness -= d_min
 
-    if frame_ % gen_time == 0:
-        for l in lucani:
-            print(l.fitness)
-            l.fitness = -min([l.p.distance_to(p) for p in piante])
-        gen_count += 1
-        print('Generazione',gen_count)
-        print('\tNumero piante rimanenti',len(piante))
-        print('\tFitness minimo',np.min([l.fitness for l in lucani]))
-        print('\tFitness medio',np.mean([l.fitness for l in lucani]))
-        print('\tFitness massimo',np.max([l.fitness for l in lucani]))
-        fitness_minimo.append(np.min([l.fitness for l in lucani]))
-        fitness_medio.append(np.mean([l.fitness for l in lucani]))
-        fitness_massimo.append(np.max([l.fitness for l in lucani]))
+        angolo_pianta_vicina = lucano.dir.angle_to( piante[pianta_vicina] - lucano.p)
+        if abs(angolo_pianta_vicina) > 180:
+            #print('pre',angolo_pianta_vicina)
+            angolo_pianta_vicina = 360 - angolo_pianta_vicina* abs(angolo_pianta_vicina) / angolo_pianta_vicina
+            #print('pos',angolo_pianta_vicina)
+           
+        angolo_pianta_vicina /= 180
         
-        if gen_count == 30:
-            gen_time = 200        
-        elif gen_count == 60:
-            gen_time = 300
-        elif gen_count > 200:
-            gen_time = np.random.choice([100,300,300,300,500,500,500,1000])
+        lucano.ragiona(angolo_pianta_vicina,d_min * 1.5 /min(finestra))
+        #lucano.fitness -= d_min
+        lucano.fitness += d_min
+        # lucano.fitness -= 0.3 * lucano.p.distance_to(gg.Vector2(finestra[0]//2,finestra[1]//2)) 
+        
+    if frame_ % gen_time == 0:
+
+        # for lucano in lucani:
+        #     #lucano.fitness = min([lucano.p.distance_to(p) for p in piante])
+        #     lucano.fitness /= gen_time
+        gen_count += 1
+        new_gen()
+        aggiorna_piante()
+        if fitness_minimo[-1] < 50 and False:
+            save_best_brain()
+            print(f"SALVATAGGIO - {gen_count} - {round(fitness_minimo[-1],2)}")
+            pass
+        
+        if gen_count == 800:
+            gen_time = 500        
+        elif gen_count == 1500:
+            gen_time = 1000
+        elif gen_count > 2000:
+            gen_time = np.random.choice([100,500,1000,2000,5000])
         #if gen_count % 10 == 0:
         #    n_piante -= 10
-        update_plot()
+        if gen_count%20 == 0 and graph:
+            update_plot()
         
         
-        new_gen()
+
         
 
     
